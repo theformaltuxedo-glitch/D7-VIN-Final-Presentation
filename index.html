@@ -355,7 +355,22 @@ function go(n, dir){
 }
 const next = () => go(cur+1,1), back = () => go(cur-1,-1);
 
+function goFull(){
+  const d=document.documentElement;
+  if(document.fullscreenElement || !d.requestFullscreen) return;
+  try{ const p=d.requestFullscreen({navigationUI:"hide"}); if(p&&p.catch) p.catch(()=>{}); }catch(e){}
+}
+/* Browsers only allow fullscreen from a click or key press, so the first one in Present mode fills the screen. */
+let fsArmed=true;
+function armFull(e){
+  if(!fsArmed || !document.body.classList.contains("mode-present")) return;
+  if(e.type==="keydown" && (e.key==="Escape"||e.key==="F11")) return;
+  fsArmed=false; goFull();
+}
+addEventListener("pointerdown", armFull, true);
+addEventListener("keydown", armFull, true);
 function enterPresent(i){
+  fsArmed=true; goFull();
   askRead();
   document.body.className = "mode-present";
   buildDeck();
