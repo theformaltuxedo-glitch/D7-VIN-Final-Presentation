@@ -94,6 +94,9 @@ select{background:#0a0f10;color:#fff;border:1px solid #2a3639;padding:7px 8px;fo
 #grid{overflow:auto;padding:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;align-content:start}
 .card{border:1px solid #243033;background:#0a0f10;cursor:grab;position:relative;user-select:none}
 .card.sel{border-color:var(--cyan);box-shadow:0 0 0 1px var(--cyan)}
+.card.loading{border:2px solid #DC24F4;box-shadow:0 0 14px rgba(220,36,244,.45)}
+.card.loading.sel{box-shadow:0 0 0 2px #fff,0 0 14px rgba(220,36,244,.45)}
+.card .ltag{position:absolute;top:0;left:0;z-index:2;background:#DC24F4;color:#000;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;padding:3px 8px;pointer-events:none}
 .card .th{aspect-ratio:16/9;background:#000;display:flex;align-items:center;justify-content:center;pointer-events:none;position:relative}
 .card .th img,.card .th video{width:100%;height:100%;object-fit:contain}
 .card.missing .th img,.card.missing .th video{display:none}
@@ -648,10 +651,10 @@ function renderGrid(){
   const g = $("grid"), st = g.scrollTop; g.innerHTML = "";
   SL().forEach((s,i)=>{
     const c = document.createElement("div");
-    c.className = "card" + (sel.has(i)?" sel":""); c.draggable = true; c.dataset.i = i;
+    c.className = "card" + (sel.has(i)?" sel":"") + (i===0?" loading":""); c.draggable = true; c.dataset.i = i;
     let kind = s.video ? "Video" : s.pdf ? "PDF" : /\.gif$/i.test(s.img) ? "GIF" : "";
     const ovn = (s.overlays||[]).length; if(ovn) kind += (kind?" + ":"")+ovn+" vid";
-    c.innerHTML = `<div class="th">${s.video?`<video src="${s.video}#t=0.1" preload="metadata" muted></video>`:`<img src="${s.img}" loading="lazy" alt="">`}</div>
+    c.innerHTML = `<div class="th">${i===0?'<span class="ltag">Loading Screen</span>':""}${s.video?`<video src="${s.video}#t=0.1" preload="metadata" muted></video>`:`<img src="${s.img}" loading="lazy" alt="">`}</div>
       <div class="meta"><b>${String(i+1).padStart(2,"0")}</b><i>${kind}</i><em class="${s.tr?"cu":""}">${trName(effTr(s))}</em></div>`;
     c.querySelector("img,video").onerror = () => c.classList.add("missing");
     c.onclick = e => {
@@ -751,7 +754,9 @@ defTr.onchange = () => { snap(); deckData.transition = defTr.value; renderGrid()
 try{ const q = localStorage.getItem("deck-quality"); if(q) $("quality").value = q; }catch(e){}
 $("quality").onchange = () => { try{ localStorage.setItem("deck-quality",$("quality").value); }catch(e){} };
 $("undoBtn").onclick = undo;
-$("presentBtn").onclick = () => enterPresent(sel.size ? Math.min(...sel) : 0);
+/* Slide 1 is the Loading Screen: the buffer shown until the first click goes full-screen.
+   Starting from the editor already has that click, so skip it unless it is the only slide. */
+$("presentBtn").onclick = () => enterPresent(sel.size ? Math.min(...sel) : (SL().length>1 ? 1 : 0));
 
 /* ---------- arranger: videos on top of a slide ---------- */
 let arrIdx = -1, arrSel = -1;
